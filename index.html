@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>CLOUD QUOTES</title>
+<style>
+        *{
+                box-sizing: border-box;
+                margin: 0;
+                padding: 0
+        }
+        body {
+                color: #eee;
+                text-shadow: 0 -1px 0 rgba( 0, 0, 0, .6 );
+                font-family: 'Open Sans', sans-serif;
+                font-size: 13px;
+                line-height: 16px;
+                overflow: hidden;
+        }
+
+
+  #backward {
+		float: left;
+	}
+
+	#forward {
+		right: 0;
+		float: right;
+	}
+
+	.navigators {
+		width: 6%;
+		height: 80%;
+		background: white;
+		opacity: 0;
+		margin: 5px;
+		-webkit-transition: 0.3s;
+		color: black;
+		-webkit-border-radius: 10px;
+		-moz-border-radius: 10px;
+		border-radius: 10px;
+		vertical-align: middle;
+		z-index: 888;
+		position: absolute;
+		top: 10%;
+		
+	}
+
+	#backward span {
+		left: 2%;
+		font-size: 72px;
+		position: fixed;
+		top: 50%;
+	}
+
+	#forward span {
+		right: 2%;
+		font-size: 72px;
+		position: fixed;
+		top: 50%;
+	}
+
+	#backward:hover, #forward:hover {
+		opacity: 0.1;
+		-webkit-transition: 0.3s;
+	}
+
+        #viewport {
+                -webkit-perspective: 1000;
+                -moz-perspective: 1000;
+                -o-perspective: 1000;
+                position: absolute;
+                left: 0;
+                top: 0;
+                right: 0;
+                bottom: 0;
+                overflow: hidden;
+                background-image: linear-gradient(bottom, rgb(69,132,180) 28%, rgb(31,71,120) 64%);
+                background-image: -o-linear-gradient(bottom, rgb(69,132,180) 28%, rgb(31,71,120) 64%);
+                background-image: -moz-linear-gradient(bottom, rgb(69,132,180) 28%, rgb(31,71,120) 64%);
+                background-image: -webkit-linear-gradient(bottom, rgb(69,132,180) 28%, rgb(31,71,120) 64%);
+                background-image: -ms-linear-gradient(bottom, rgb(69,132,180) 28%, rgb(31,71,120) 64%);
+                background-image: -webkit-gradient(
+                        linear,
+                        left bottom,
+                        left top,
+                        color-stop(0.28, rgb(69,132,180)),
+                        color-stop(0.64, rgb(31,71,120))
+                );
+        }
+
+        #world {
+                position: absolute;
+                left: 50%;
+                top: 50%;
+                margin-left: -256px;
+                margin-top: -256px;
+                height: 512px;
+                width: 512px;
+                -webkit-transform-style: preserve-3d;
+                -moz-transform-style: preserve-3d;
+                -o-transform-style: preserve-3d;
+        }
+
+        #world div {
+                -webkit-transform-style: preserve-3d;
+                -moz-transform-style: preserve-3d;
+                -o-transform-style: preserve-3d;
+        }
+
+        .cloudBase {
+                position: absolute;
+                left: 256px;
+                top: 256px;
+                width: 20px;
+                height: 20px;
+                margin-left: -10px;
+                margin-top: -10px;
+        }
+
+        .cloudLayer {
+                position: absolute;
+                left: 50%;
+                top: 50%;
+                width: 256px;
+                height: 256px;
+                margin-left: -128px;
+                margin-top: -128px;
+                -webkit-transition: opacity .5s ease-out;
+                -moz-transition: opacity .5s ease-out;
+                -o-transition: opacity .5s ease-out;
+        }
+        
+        #hello {
+		position: relative;
+		text-align: center;
+		padding-top: 20%;
+		color: black;
+		z-index: 1;
+		line-height: 300%;
+		margin: 0 10% 0 10%;
+		-webkit-animation-duration: 0.15s;
+		-webkit-animation-timing-function: linear;
+    }
+    
+        
+
+	@-webkit-keyframes shrink {
+	    0% {
+		font-size: 72;
+	    }
+	    100% {
+		font-size: 0;
+	    }
+	}
+	
+	@-webkit-keyframes grow {
+	    0% {
+		font-size: 0;
+	    }
+	    100% {
+		font-size: 72;
+	    }
+}
+
+        </style>
+</head>
+        <body>
+        <div id="viewport" >
+          <div id="hello"></div>
+          <div id="backward" class="navigators"><span>&lt;</span></div>
+          <div id="forward" class="navigators"><span>&gt;</span></div>
+          <div id="world"></div>
+        </div>
+
+        <script>
+
+        (function() {
+                var lastTime = 0;
+                var vendors = ['ms', 'moz', 'webkit', 'o'];
+                for(var x = 0; x < vendors.length && !window.requestAnimationFrame; ++x) {
+                        window.requestAnimationFrame = window[vendors[x]+'RequestAnimationFrame'];
+                        window.cancelRequestAnimationFrame = window[vendors[x]+
+                          'CancelRequestAnimationFrame'];
+                }
+
+                if (!window.requestAnimationFrame)
+                        window.requestAnimationFrame = function(callback, element) {
+                                var currTime = new Date().getTime();
+                                var timeToCall = Math.max(0, 16 - (currTime - lastTime));
+                                var id = window.setTimeout(function() { callback(currTime + timeToCall); },
+                                  timeToCall);
+                                lastTime = currTime + timeToCall;
+                                return id;
+                        };
+
+                if (!window.cancelAnimationFrame)
+                        window.cancelAnimationFrame = function(id) {
+                                clearTimeout(id);
+                        };
+        }())
+
+        var layers = [],
+                objects = [],
+
+                world = document.getElementById( 'world' ),
+                viewport = document.getElementById( 'viewport' ),
+
+                d = 0,
+                p = 400,
+                worldXAngle = 0,
+                worldYAngle = 0;
+
+        viewport.style.webkitPerspective = p;
+        viewport.style.MozPerspective = p;
+        viewport.style.oPerspective = p;
+
+        generate();
+
+        function createCloud() {
+
+                var div = document.createElement( 'div'  );
+                div.className = 'cloudBase';
+                var x = 256 - ( Math.random() * 512 );
+                var y = 256 - ( Math.random() * 512 );
+                var z = 256 - ( Math.random() * 512 );
+                var t = 'translateX( ' + x + 'px ) translateY( ' + y + 'px ) translateZ( ' + z + 'px )';
+                div.style.webkitTransform = t;
+                div.style.MozTransform = t;
+                div.style.oTransform = t;
+                world.appendChild( div );
+
+                for( var j = 0; j < 5 + Math.round( Math.random() * 10 ); j++ ) {
+                        var cloud = document.createElement( 'img' );
+                        cloud.style.opacity = 0;
+                        var r = Math.random();
+                        var src = 'cloud.png';
+                        ( function( img ) { img.addEventListener( 'load', function() {
+                                img.style.opacity = .8;
+                        } ) } )( cloud );
+                        cloud.setAttribute( 'src', src );
+                        cloud.className = 'cloudLayer';
+
+                        var x = 256 - ( Math.random() * 512 );
+                        var y = 256 - ( Math.random() * 512 );
+                        var z = 100 - ( Math.random() * 200 );
+                        var a = Math.random() * 360;
+                        var s = .25 + Math.random();
+                        x *= .2; y *= .2;
+                        cloud.data = {
+                                x: x,
+                                y: y,
+                                z: z,
+                                a: a,
+                                s: s,
+                                speed: .1 * Math.random()
+                        };
+                        var t = 'translateX( ' + x + 'px ) translateY( ' + y + 'px ) translateZ( ' + z + 'px ) rotateZ( ' + a + 'deg ) scale( ' + s + ' )';
+                        cloud.style.webkitTransform = t;
+                        cloud.style.MozTransform = t;
+                        cloud.style.oTransform = t;
+
+                        div.appendChild( cloud );
+                        layers.push( cloud );
+                }
+
+                return div;
+        }
+
+        window.addEventListener( 'mousewheel', onContainerMouseWheel );
+        window.addEventListener( 'DOMMouseScroll', onContainerMouseWheel );
+
+        window.addEventListener( 'mousemove', function( e ) {
+                worldYAngle = -( .5 - ( e.clientX / window.innerWidth ) ) * 180;
+                worldXAngle = ( .5 - ( e.clientY / window.innerHeight ) ) * 180;
+                updateView();
+        } );
+
+        function generate() {
+                objects = [];
+                if ( world.hasChildNodes() ) {
+                        while ( world.childNodes.length >= 1 ) {
+                                world.removeChild( world.firstChild );
+                        }
+                }
+                for( var j = 0; j < 5; j++ ) {
+                        objects.push( createCloud() );
+                }
+        }
+
+        function updateView() {
+                var t = 'translateZ( ' + d + 'px ) rotateX( ' + worldXAngle + 'deg) rotateY( ' + worldYAngle + 'deg)';
+                world.style.webkitTransform = t;
+                world.style.MozTransform = t;
+                world.style.oTransform = t;
+        }
+
+        function onContainerMouseWheel( event ) {
+
+                event = event ? event : window.event;
+                d = d - ( event.detail ? event.detail * -5 : event.wheelDelta / 8 );
+                updateView();
+
+        }
+
+        function update (){
+
+                for( var j = 0; j < layers.length; j++ ) {
+                        var layer = layers[ j ];
+                        layer.data.a += layer.data.speed;
+                        var t = 'translateX( ' + layer.data.x + 'px ) translateY( ' + layer.data.y + 'px ) translateZ( ' + layer.data.z + 'px ) rotateY( ' + ( - worldYAngle ) + 'deg ) rotateX( ' + ( - worldXAngle ) + 'deg ) rotateZ( ' + layer.data.a + 'deg ) scale( ' + layer.data.s + ')';
+                        layer.style.webkitTransform = t;
+                        layer.style.MozTransform = t;
+                        layer.style.oTransform = t;
+                }
+
+                requestAnimationFrame( update );
+
+        }
+
+        update();
+	
+	var quotes = [
+		["Whenever you feel like criticizing anyone, just remember that all the people in this world haven't had the advantages that you've had.","24th June 2013"],
+		["Thoughts do matter, yes. But there's no reason to suffer just because a stranger may have a particular thought about you","25th June 2013"],
+		["It's never too late to learn","4th July 2013"],
+		["Everyone has a plan - until they get punched in the face","6th July 2013"],
+		["Remember that sometimes not getting what you want is a wonderful stroke of luck","11th July 2013"],
+		["Take a step back to make a running leap","17th July 2013"],
+		["The last of one's freedom is to choose one's attitude in any given circumstance","22nd July 2013"],
+		["It could be good, It could be bad, I don't know.","25th July 2013"],
+		["The obstacle is the path","29th July 2013"],
+		["Business opportunities are like buses; there's always another one coming.","4th August 2013"],
+		["You can only do so much, and then you're at the mercy of fortune.","10th August 2013"],
+		["You can't cling to the past, because no matter how tightly you hold on, it's already gone.","16th August 2013"],
+		["There are no excuses for laziness","24th August 2013"],
+		["First of all, I'd say marry the right person","28th August 2013"],
+		["To invent your own life's meaning is not easy but it's still allowed, and I think you'll be happier for the trouble.","5th September 2013"],
+		["So, create a vision based on overcoming reality, but create your plan based on reality.","19th September 2013"],
+		["Don't eat when you are not hungry","25th September 2013"],
+		["Don't dabble, focus.","15th October 2013"],
+		["Happiness is only real when shared","28th October 2013"],
+		["When you want to have fun, you've got to make your own","7th November 2013"],
+		["Bide your time, nothing is permanent, whether good or bad","13th November 2013"],
+		["Eat less, Live longer","18th November 2013"],
+		["Tomorrow we will run faster, stretch out our arms farther","24th November 2013"],
+		["Choose your own adventure","19th December 2013"],
+		["Don't compare yourself with anyone in this world...if you do so, you are insulting yourself.","23rd December 2013"],
+		["Be who you are.","1st January 2014"],
+		["Determine what you want in life and act on it. Stop waiting for someone to give it to you. You'll be waiting a long time.","19th January 2014"],
+		["You Have Reached the Pinnacle of Success as Soon as You Become Uninterested in Money, Compliments, or Publicity.","27th January 2014"],
+    ["Health and Happiness First", "31st January 2014"],
+    ["Formal education will make you a living; self-education will make you a fortune.","9th February 2014"],
+    ["<img width=200px height=200px src=heart.png />","14th February 2014"],
+    ["Always remember, the art of good business is being a good middleman","16th February 2014"],
+    ["It's impossible, that's sure. So let's start working.","23rd February 2014"],
+    ["The secret to getting ahead is getting started","1st March 2014"],
+    ["Live by the sword, die by the sword", "12th March 2014"],
+    ["There is neither good nor ill but thinking makes it so","13th March 2014"],
+    ["It's not our job to play judge and jury, to determine who is worthy of our kindness and who is not. We just need to be kind, unconditionally and without ulterior motive, evenâ€”or rather, especiallyâ€”when we'd prefer not to be. For me, it's simple and not entirely unselfish: When I'm kind, I feel good; when I'm not, I feel horrible.","20th March 2014"],
+    ["Everybody is a genius. But if you judge a fish by its ability to climb a tree, it will live its whole life believing that it is stupid.","31st March 2014"],
+    ["Two Stones. One Bird.","15th April 2014"],
+    ["It's just a job. Grass grows, birds fly, waves pound the sand. I beat people up.","23rd April 2014"],
+    ["If we were motivated by money, we would have sold the company a long time ago and ended up on a beach.", "30th April 2014"],
+    ["May the fourth be with you","4th May 2014"],
+    ["Fearlessness is like a muscle. I know from my own life that the more I exercise it the more natural it becomes to not let my fears run me.","6th May 2014"],
+    ["I fell apart but got back up again","17th May 2014"],
+    ["Your life won't ever be the same again","21st May 2014"],
+    ["There are many paths to the top of the mountain, but the view is always the same","28th May 2014"],
+    ["Don't compare your life to others, and don't judge them.  You have no idea what their journey is about.","10th June 2014"],
+    ["Success is getting what you want. Happiness is wanting what you get.", "13th June 2014"],
+    ["A change in perspective is worth 80 IQ points", "20th June 2014"],
+    ["It is difficult to get a man to understand something when his salary depends upon his not understanding it","23rd June 2014"],
+    ["This is water","8th July 2014"],
+    ["Price is what you pay. Value is what you get.","13th July 2014"],
+    ["Everything counts","21st July 2014"],
+    ["A good head and good heart are always a formidable combination. But when you add to that a literate tongue or pen, then you have something very special.","28th July 2014"],
+    ["The voyage of discovery is not in seeking new landscapes but in having new eyes.","5th August 2014"],
+    ["There is a tide in the affairs of men, Which, taken at the flood, leads on to fortune","10th August 2014"],
+    ["I think part of the reason we're successful so far is that originally we didn't really want to start a business.","17th August 2014"],
+    ["The universe rewards action","26th August 2014"],
+    ["If you love life, don't waste time, for time is what life is made up of.","29th August 2014"],
+    ["I have become my own version of an optimist. If I can't make it through one door, I'll go through another door or I'll make a door. Something terrific will come no matter how dark the present.","5th September 2014"],
+    ["R U OK?","11th September 2014"],
+    ["We act as though comfort and luxury were the chief requirements of life, when all that we need to make us really happy is something to be enthusiastic about.", "21st September 2014"],
+    ["What you get by achieving your goals is not as important as what you become by achieving your goals","8th October 2014"],
+    ["I think if you're going to be a leader you can't wait for somebody else to do it", "26th October 2014"],
+    ["You can't change the people around you, but you can change the people around you", "14th November 2014"],
+    ["If you could kick the person in the pants responsible for most of your trouble, you wouldn't sit for a month.","28th November 2014"],
+    ["moveForward(100);","13th December 2014"],
+    ["A man doesn't plant a tree for himself. He plants it for posterity.","21st December 2014"],
+    ["Frugality drives innovation, just like other constraints do. One of the only ways to get out of a tight box is to invent your way out.","7th January 2015"],
+    ["Progress is impossible without change.","18th January 2015"],
+    ["The only risk of failure is promotion.","10th February 2015"],
+    ["Be yourself; Everyone else is already taken.","27th February 2015"],
+    ["People Can Change","15th March 2015"],
+    ["The essential thing is not to have conquered but to have fought well.","23rd March 2015"],
+    ["The best things in life are silly","16th April 2015"],
+    ["Where there is life, there is hope","27th April 2015"],
+    ["Anything is possible with a willing heart","12th May 2015"],
+    ["First, Do No Harm...","17th May 2015"],
+    ["If you don't design your own life plan, chances are you'll fall into someone else's plan.  And guess what they have planned for you? Not much.","11th June 2015"],
+    ["Explore. Dream. Discover.","24th June 2015"],
+    ["A good soldier never leaves a man behind","12th July 2015"],
+    ["Sometimes you just have to jump out the window and grow wings on the way down.","22nd August 2015"],
+    ["Sometimes good enough is good enough","25th September 2016"],
+    ["Nations are changed w actions not words","18th March 2017"],
+    ["The fact is that no country will ever achieve its full potential if half of its talent pool is stymied or under-represented.","15th March 2018" ]
+    ];
+    
+	var length = quotes.length - 1;
+	var hello = document.getElementById("hello");
+
+	var current = length;
+
+	hello.innerHTML="<h1>" + quotes[current][0] + "</h1><p>" + quotes[current][1] + "</p>";
+
+	hello.addEventListener('webkitAnimationEnd', function(){
+	    this.style.webkitAnimationName = '';}, false);
+
+	function changeQuote() {
+		hello.style.webkitAnimationName = "shrink";
+		hello.addEventListener('webkitAnimationEnd', function(){
+			hello.innerHTML="<h1>" + quotes[current][0] + "</h1><p>" + quotes[current][1] + "</p>";
+			this.style.webkitAnimationName = "grow";}, false);
+	};
+
+	document.getElementById("backward").onclick = function(){
+		if (current >= 1) {
+			current--;
+			changeQuote();
+		}
+	};
+
+	document.getElementById("forward").onclick = function(){
+		if (current < length) {
+			current++;
+ 			changeQuote();
+		}
+	};
+
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-45247588-1', 'neocities.org');
+  ga('send', 'pageview');
+  
+  </script>
+
+</body>
+
+
+</html>
+<!--Get your own CSS clouds here - http://www.clicktorelease.com/code/css3dclouds/-->
+                    
+    
+    
+    
+    
